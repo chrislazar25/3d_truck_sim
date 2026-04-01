@@ -1,123 +1,89 @@
 # Truck Viz
 
-Interactive **3D truck visualization** built with React and [React Three Fiber](https://docs.pmnd.rs/react-three-fiber/getting-started/introduction). A GLB model drives brake and headlight materials, wheel rotation from speed, subtle suspension “rumble” at higher speeds, and optional selective bloom on the headlights. A small **Express API** keeps lighting and speed in sync so you can wire in real telemetry or control surfaces later.
+> Interactive vehicle state in the browser: a **GLB truck** in React Three Fiber, **lighting and speed** driven from a small **Express API**, with soft shadows, selective bloom, and a minimal HUD.
 
 ---
 
-## Features
+### Highlights
 
-- **Orbit camera** — drag to orbit, scroll to zoom (damped controls).
-- **Lighting** — brake/tail and headlight toggles update both the 3D scene and server state.
-- **Speed** — slider roughly −30…30; wheels spin proportionally; above a threshold, motion adds suspension-style movement.
-- **HUD** — vehicle controls, link status to the API, and a compact event log (sync, lights, speed posts, link up/down).
-- **Dev overlay** — optional “toy perception” (cone + lidar-style lines) for demos.
-- **Deployment-ready** — Vite dev proxy for local API; `VITE_API_URL` for production static hosting; CORS configured on the API via `FRONTEND_URL`.
+- **3D scene** — Orbit controls, environment lighting, wheel rotation from speed, subtle chassis motion at higher speeds.
+- **Lights** — Brake and headlight meshes respond to toggles; state stays aligned with the server.
+- **API** — In-memory `brakeOn`, `headOn`, and `speed`; the UI polls health and debounces speed writes.
+- **Extras** — Optional perception overlay (cone + scan lines) for visualization demos.
 
 ---
 
-## Stack
+### Stack
 
-| Layer    | Choice |
-| -------- | ------ |
-| UI       | React 18, Vite 6 |
-| 3D       | Three.js, `@react-three/fiber`, `@react-three/drei`, `@react-three/postprocessing` |
-| API      | Express 5, `cors` |
+React 18 · Vite 6 · Three.js · `@react-three/fiber` · `@react-three/drei` · `@react-three/postprocessing` · Express 5
 
 ---
 
-## Prerequisites
+### Run locally
 
-- **Node.js 20** (matches [Render](https://render.com) config in `render.yaml`)
+**Requires Node.js 20.**
 
----
+```bash
+npm install
+```
 
-## Local development
+Terminal 1 — API (default port `3001`):
 
-1. **Install dependencies**
+```bash
+npm run server
+```
 
-   ```bash
-   npm install
-   ```
+Terminal 2 — app:
 
-2. **Start the API** (port **3001** by default)
+```bash
+npm run dev
+```
 
-   ```bash
-   npm run server
-   ```
-
-3. **Start the Vite dev server** (in another terminal)
-
-   ```bash
-   npm run dev
-   ```
-
-   Vite proxies `GET /state`, `POST /lights/*`, and `POST /truck/speed` to `http://localhost:3001`, so the browser can call same-origin paths while developing.
-
-4. Open the URL Vite prints (usually `http://localhost:5173`). The truck model is served from `public/truck.glb`.
+Open the URL Vite prints (typically `http://localhost:5173`). The model lives at `public/truck.glb`. Same-origin requests in dev are proxied to the API (`/state`, `/lights/*`, `/truck/speed`).
 
 ---
 
-## Environment variables
+### Environment (optional)
 
-Copy `.env.example` and adjust for your hosts.
+For a static build that talks to an API on another origin, set `VITE_API_URL` to that origin with **no trailing slash**. See `.env.example`.
 
-| Variable | Where | Purpose |
-| -------- | ----- | ------- |
-| `VITE_API_URL` | Frontend build (e.g. Vercel) | Public origin of the API, **no trailing slash**. Empty in local dev uses the Vite proxy. |
-| `FRONTEND_URL` | API (e.g. Render) | Comma-separated allowed origins for CORS. If unset, the API allows all origins (fine for local-only use). |
+On the server, `FRONTEND_URL` can be a comma-separated allowlist for CORS; if unset, all origins are allowed (convenient for local work).
 
 ---
 
-## API reference
+### API
 
-Base URL: local `http://localhost:3001`, or your deployed API. State is **in-memory** and resets when the server restarts.
+In-memory state; resets when the server restarts.
 
-| Method | Path | Body | Description |
-| ------ | ---- | ---- | ----------- |
-| `GET` | `/` | — | Health: `{ ok, service }` |
-| `GET` | `/state` | — | `{ brakeOn, headOn, speed }` |
-| `POST` | `/lights/brake` | `{ "on": boolean }` optional — omit toggles | Update brake lights |
-| `POST` | `/lights/head` | `{ "on": boolean }` optional — omit toggles | Update headlights |
-| `POST` | `/truck/speed` | `{ "speed": number }` required | Update speed |
+| Endpoint | Description |
+| --- | --- |
+| `GET /` | Health: `{ ok, service }` |
+| `GET /state` | `{ brakeOn, headOn, speed }` |
+| `POST /lights/brake` | `{ "on": boolean }` optional (omit body to toggle) |
+| `POST /lights/head` | same |
+| `POST /truck/speed` | `{ "speed": number }` required |
 
-Successful POSTs return `{ ok: true, brakeOn, headOn, speed }`.
-
----
-
-## Production deployment (example)
-
-Typical split:
-
-1. **Frontend** — Build with `npm run build` and host the `dist` output (e.g. [Vercel](https://vercel.com) with `vercel.json` SPA rewrites). Set `VITE_API_URL` to your API origin at build time.
-2. **API** — Run `npm run server` on a Node host (e.g. [Render](https://render.com) using `render.yaml`). Set `FRONTEND_URL` to your production site URL(s).
+Successful `POST` responses: `{ ok: true, brakeOn, headOn, speed }`.
 
 ---
 
-## Scripts
+### Scripts
 
 | Command | Description |
-| ------- | ----------- |
-| `npm run dev` | Vite dev server with API proxy |
-| `npm run build` | Production build → `dist/` |
-| `npm run preview` | Preview production build (proxy config matches dev) |
-| `npm run server` | Express API on `PORT` or `3001` |
+| --- | --- |
+| `npm run dev` | Vite dev server + API proxy |
+| `npm run build` | Output to `dist/` |
+| `npm run preview` | Preview `dist/` (proxy unchanged) |
+| `npm run server` | API on `PORT` or `3001` |
 
 ---
 
-## Project layout
+### Layout
 
 ```
-├── public/truck.glb   # 3D model (replaceable; mesh names in App.jsx must match)
-├── server.js          # Express API
-├── src/App.jsx        # Scene, HUD, API client
-├── src/index.css
-├── vite.config.js     # Dev/preview proxy (avoid proxying `/truck` — would shadow `truck.glb`)
-├── vercel.json
-└── render.yaml
+public/truck.glb
+server.js
+src/App.jsx          — scene, materials, HUD, client
+src/index.css
+vite.config.js       — proxy; `/truck/*` is not proxied so `truck.glb` stays reachable
 ```
-
----
-
-## License
-
-Private project (`"private": true` in `package.json`). Adjust as needed if you open-source it.
