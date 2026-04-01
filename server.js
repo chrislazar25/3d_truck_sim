@@ -4,7 +4,8 @@ import cors from "cors";
 const app = express();
 const PORT = process.env.PORT ?? 3001;
 
-const frontendOrigins = process.env.FRONTEND_URL?.split(",")
+const frontendOrigins = (process.env.FRONTEND_URL ?? "")
+  .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
 
