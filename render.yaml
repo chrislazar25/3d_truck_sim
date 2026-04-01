@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: truck-viz-api
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm run server
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: FRONTEND_URL
+        sync: false
